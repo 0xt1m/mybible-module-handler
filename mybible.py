@@ -95,9 +95,18 @@ class Mybible:
 
 		book_number = self.book_to_number(book)
 
-		verse_db = self.cursor.execute(f"""SELECT * FROM verses WHERE book_number={book_number}
-			AND chapter={chapter} AND verse={verse}""").fetchall()
-		verse = Verse(verse_db[0][0], verse_db[0][1], verse_db[0][2], verse_db[0][3])
+		verse_db = None
+		try:
+			verse_db = self.cursor.execute(f"""SELECT * FROM verses WHERE book_number={book_number}
+				AND chapter={chapter} AND verse={verse}""").fetchall()
+		except:
+			raise ValueError("Something wrong")
+
+		verse = None
+		try:
+			verse = Verse(verse_db[0][0], verse_db[0][1], verse_db[0][2], verse_db[0][3])
+		except:
+			raise ValueError("Nothing found")
 		return verse
 
 	def find_by_text(self, query_text):
@@ -112,61 +121,26 @@ class Mybible:
 			text = text.replace("ю́", "ю").replace("я́", "я")
 			if query_text.lower() in text:
 				return v
+		raise ValueError("Nothing found")
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# start_time = time.time()
 
 # bible = Mybible("UBIO'88.SQLite3")
-
-# in_verse = input("Enter bible place: ")
-# verse_text = ""
-# try:
-# 	verse_text = bible.find("1ів 1 1")
-# 	print(verse_text)
-# except:
-# 	print("Can't find it")
-
-# a = "Що́"
-# b = "Що"
-# c = "bla, bla! bla."
-
-# c = c.translate(str.maketrans('', '', string.punctuation))
-# print(c)
 
 # print(bible.find_by_text("бо всі згрішили"))
 # print(bible.find_by_text("бог є любов"))
 # print(bible.find_by_text("з руки ангола"))
 
+# print(bible.find("1ів 1 1"))
+# print(bible.find("буття 1 10"))
+
+# print(bible.find("цшщщ длд додл"))
 
 
-# b = "вiд iвана" # Text from bible
-# c = "від івана"
-# if "і" in b:
-# 	print("Okay")
+# print(bible.find_by_text("alkdjlaksj"))
 
 
-
-
-# if "іван".lower() in b.lower():
-# 	print("Okay")
-
-
-# print(time.time() - start_time)
 
 
 
