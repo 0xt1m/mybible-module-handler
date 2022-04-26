@@ -62,7 +62,6 @@ class Mybible:
 
 	def book_to_number(self, book):
 		for b in self.all_books:
-			# print(b.short_name.lower())
 			if book.lower() in b.long_name.lower().replace("i", "і") or book.lower() in b.short_name.lower().replace("i", "і"):
 				return b.book_number
 			if len(b.short_name.split()) == 2:
@@ -123,22 +122,39 @@ class Mybible:
 				return v
 		raise ValueError("Nothing found")
 
+	def find_all_by_text(self, query_text):
+		if self.all_verses == None:
+			self.all_verses = self.__get_all_verses()
+
+		res = []
+		for v in self.all_verses:
+			text = v.text.translate(str.maketrans('', '', string.punctuation)).lower().replace("„", "")
+			text = text.replace("а́", "а").replace("є́", "є")
+			text = text.replace("е́", "е").replace("и́", "и")
+			text = text.replace("і́", "і").replace("ї́", "ї")
+			text = text.replace("о́", "о").replace("у́", "у")
+			text = text.replace("ю́", "ю").replace("я́", "я")
+			if query_text.lower() in text:
+				res.append(v)
+		if res == []:
+			raise ValueError("Nothing found")
+		return res
 
 
 
+
+bible = Mybible("UMT'07.SQLite3")
 # bible = Mybible("UBIO'88.SQLite3")
+
 
 # print(bible.find_by_text("бо всі згрішили"))
 # print(bible.find_by_text("бог є любов"))
-# print(bible.find_by_text("з руки ангола"))
-
-# print(bible.find("1ів 1 1"))
-# print(bible.find("буття 1 10"))
-
-# print(bible.find("цшщщ длд додл"))
+# texts = bible.find_all_by_text("і назвав Він")
+# for t in texts:
+# 	print(t)
 
 
-# print(bible.find_by_text("alkdjlaksj"))
+
 
 
 
