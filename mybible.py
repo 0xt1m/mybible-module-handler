@@ -48,6 +48,37 @@ class Mybible:
 		self.all_books = self.__get_all_books()
 		self.all_verses = self.__get_all_verses()
 
+		self.__create_search_table()
+
+		self.all_search_verses = self.__get_all_search_verses()
+
+
+	def __create_search_table(self):
+		if self.all_verses == None:
+			self.all_verses = self.__get_all_verses()
+
+		try:
+			self.cursor.execute("""CREATE TABLE verses_search (
+				"book_number"	NUMERIC NOT NULL,
+				"chapter"	NUMERIC NOT NULL,
+				"verse"	NUMERIC NOT NULL,
+				"text"	TEXT NOT NULL DEFAULT ''
+			);""")
+		except:
+			pass
+		check = self.cursor.execute(f"SELECT * FROM verses_search WHERE book_number=10 AND chapter=1 AND verse=1").fetchall()
+		if not check:
+			for v in self.all_verses:
+				text = v.text.translate(str.maketrans('', '', string.punctuation)).lower().replace("„", "")
+				text = text.replace("а́", "а").replace("є́", "є")
+				text = text.replace("е́", "е").replace("и́", "и")
+				text = text.replace("і́", "і").replace("ї́", "ї")
+				text = text.replace("о́", "о").replace("у́", "у")
+				text = text.replace("ю́", "ю").replace("я́", "я")		
+				self.cursor.execute(f"INSERT INTO verses_search VALUES (?, ?, ?, ?)", (v.book_number, v.chapter, v.verse, text))
+
+			self.connection.commit()
+		
 
 	def __get_all_books(self):
 		all_books = self.cursor.execute("SELECT * FROM books").fetchall()
@@ -60,9 +91,18 @@ class Mybible:
 		res = [Verse(v[0], v[1], v[2], v[3]) for v in all_verses]
 		return res
 
+	def __get_all_search_verses(self):
+		all_search_verses = self.cursor.execute("SELECT * FROM verses_search").fetchall()
+		res = [Verse(v[0], v[1], v[2], v[3]) for v in all_search_verses]
+		return res
+	
 	def book_to_number(self, book):
+		book = book.lower().replace("i", "і")
 		for b in self.all_books:
-			if book.lower() in b.long_name.lower().replace("i", "і") or book.lower() in b.short_name.lower().replace("i", "і"):
+			b_l = b.long_name.lower().replace("i", "і")
+			b_s = b.short_name.lower().replace("i", "і")
+			# print(book + " <><> " + b_l)
+			if book in b_l or book in b_s:
 				return b.book_number
 			if len(b.short_name.split()) == 2:
 				try_line = b.short_name.split()
@@ -71,12 +111,45 @@ class Mybible:
 					return b.book_number
 		return 0
 
+	
+	def get_book_index_by_number(self, book_number):
+		for i in range(len(self.all_books)):
+			if self.all_books[i].book_number == book_number:
+				return i
+
+
+	def get_book_title_by_number(self, book_number):
+		for i in range(len(self.all_books)):
+			if self.all_books[i].book_number == book_number:
+				return self.all_books[i].long_name
+
+	
+	def get_book_by_number(self, book_number):
+		b = self.cursor.execute(f"SELECT * FROM books WHERE book_number={book_number}").fetchall()
+		book = Book(b[0][0], b[0][1], b[0][2], b[0][3])
+		return book
+
+	
 	def get_verse(self, book_number, chapter, verse):
 		verse_db = self.cursor.execute(f"""SELECT * FROM verses WHERE book_number={book_number}
 			AND chapter={chapter} AND verse={verse}""").fetchall()
 		verse = Verse(verse_db[0][0], verse_db[0][1], verse_db[0][2], verse_db[0][3])
 		return verse
 
+	
+	def get_verses(self, book_number, chapter):
+		res = []
+		verses = self.cursor.execute(f"SELECT * FROM verses WHERE book_number={book_number} AND chapter={chapter}").fetchall()
+		res = [Verse(v[0], v[1], v[2], v[3]) for v in verses]
+		return res
+
+	
+	def count_of_chapters(self, book_number):
+		chapters = self.cursor.execute(f"SELECT chapter FROM verses WHERE book_number={book_number}").fetchall()
+		chapters = list(set(chapters))
+		return len(chapters)
+
+	
 	def find(self, query):
 		query_s = query.split()
 		if len(query_s) < 3:
@@ -108,20 +181,17 @@ class Mybible:
 			raise ValueError("Nothing found")
 		return verse
 
+	
 	def find_by_text(self, query_text):
 		if self.all_verses == None:
 			self.all_verses = self.__get_all_verses()
 		for v in self.all_verses:
-			text = v.text.translate(str.maketrans('', '', string.punctuation)).lower().replace("„", "")
-			text = text.replace("а́", "а").replace("є́", "є")
-			text = text.replace("е́", "е").replace("и́", "и")
-			text = text.replace("і́", "і").replace("ї́", "ї")
-			text = text.replace("о́", "о").replace("у́", "у")
-			text = text.replace("ю́", "ю").replace("я́", "я")
+			text = v.text.lower()
 			if query_text.lower() in text:
 				return v
 		raise ValueError("Nothing found")
 
+	
 	def find_all_by_text(self, query_text):
 		if self.all_verses == None:
 			self.all_verses = self.__get_all_verses()
@@ -141,23 +211,9 @@ class Mybible:
 		return res
 
 
+# import time
+# start_time = time.time()
 
+# bible = Mybible("bible_translations/UBIO'88.SQLite3")
 
-bible = Mybible("UMT'07.SQLite3")
-# bible = Mybible("UBIO'88.SQLite3")
-
-
-# print(bible.find_by_text("бо всі згрішили"))
-# print(bible.find_by_text("бог є любов"))
-# texts = bible.find_all_by_text("і назвав Він")
-# for t in texts:
-# 	print(t)
-
-
-
-
-
-
-
-
-
+# print(time.time() - start_time)
