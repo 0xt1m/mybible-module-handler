@@ -1,5 +1,4 @@
 # mybible-module-handler
-Python library for handling mybible modules
 Maybe you know about MyBible. This is an android application with a simple interface, and there you can read the bible.
 But the top feature of this program is its modules.
 
